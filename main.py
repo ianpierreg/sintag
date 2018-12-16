@@ -3,6 +3,9 @@ import nltk
 from cogroo_interface import Cogroo
 cogroo = Cogroo.Instance()
 import operator
+text = ""
+conj_sentences = []
+pos_taggers = []
 probability_matrix = {
     "BNP": {"BNP": 0.0, "INP": 0.0, "ENP": 0.0, "BVP": 0.0, "IVP": 0.0, "EVP": 0.0, "COUNT": 0},
     "INP": {"BNP": 0.0, "INP": 0.0, "ENP": 0.0, "BVP": 0.0, "IVP": 0.0, "EVP": 0.0, "COUNT": 0},
