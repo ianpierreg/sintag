@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 import nltk
+from cogroo_interface import Cogroo
+cogroo = Cogroo.Instance()
 import operator
 probability_matrix = {
     "BNP": {"BNP": 0.0, "INP": 0.0, "ENP": 0.0, "BVP": 0.0, "IVP": 0.0, "EVP": 0.0, "COUNT": 0},
@@ -9,6 +11,77 @@ probability_matrix = {
     "IVP": {"BNP": 0.0, "INP": 0.0, "ENP": 0.0, "BVP": 0.0, "IVP": 0.0, "EVP": 0.0, "COUNT": 0},
     "EVP": {"BNP": 0.0, "INP": 0.0, "ENP": 0.0, "BVP": 0.0, "IVP": 0.0, "EVP": 0.0, "COUNT": 0}
 }
+
+
+def pre_process():
+    global text
+    
+    if 'ao' in text:
+        text.replace('ao', 'a o')
+    if 'à' in text:
+        text.replace('à', 'a a')
+    if 'da' in text:
+        text.replace('da', 'de a')
+    if 'do' in text:
+        text.replace('do', 'de o')
+    if 'na' in text:
+        text.replace('na', 'em a')
+    if 'no' in text:
+        text.replace('no', 'em o')
+    if 'dele' in text:
+        text.replace('dele', 'de ele')
+    if 'dela' in text:
+        text.replace('dela', 'de ela')
+    if 'pela' in text:
+        text.replace('pela', 'por a')
+    if 'pelo' in text:
+        text.replace('pelo', 'por o')
+    if 'nele' in text:
+        text.replace('nele', 'em ele')
+    if 'nela' in text:
+        text.replace('nela', 'em ela')
+    if 'dali' in text:
+        text.replace('dali', 'de ali')
+    if 'àquele' in text:
+        text.replace('àquele', 'a aquele')
+    if 'àquela' in text:
+        text.replace('àquela', 'a aquela')
+    if 'àquilo' in text:
+        text.replace('àquilo', 'a aquilo'))
+
+
+def get_sentences():
+    global conj_sentences, text
+    
+    conj_sentences = text.split(".")
+    if '' in conj_sentences:
+        conj_sentences.remove('')
+    
+
+def read_files(file_name):
+    global text
+    
+    with open(file_name) as file:
+        text = file.read()
+
+
+def get_morphology():
+    global cogroo, pos_taggers, conj_sentences
+    
+    pos_taggers = []
+    for term in conj_sentences:
+        tagger = []        
+        sentence = cogroo.analyze(term)
+        for pos_tag in sentence.sentences[0].tokens:
+            tagger.append(pos_tag.pos)
+        pos_taggers.append(tagger)
+
+
+def analyze_sentences():
+    read_files('entrada.txt')
+    pre_process() # realiza a separação de palavras compostas
+    get_sentences()
+    get_morphology()
 
 
 def count_sintag(sentence):
