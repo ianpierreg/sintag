@@ -1,11 +1,16 @@
 # -*- coding: utf-8 -*-
 import nltk
-from cogroo_interface import Cogroo
-cogroo = Cogroo.Instance()
+nltk.download('averaged_perceptron_tagger')
+nltk.download('floresta')
+nltk.download('punkt')
+from nltk import tokenize
+from nltk.corpus import floresta
+# from cogroo_interface import Cogroo
+# cogroo = Cogroo.Instance()
 import operator
 text = ""
-conj_sentences = []
-pos_taggers = []
+# conj_sentences = []
+# pos_taggers = []
 probability_matrix = {
     "BNP": {"BNP": 0.0, "INP": 0.0, "ENP": 0.0, "BVP": 0.0, "IVP": 0.0, "EVP": 0.0, "COUNT": 0},
     "INP": {"BNP": 0.0, "INP": 0.0, "ENP": 0.0, "BVP": 0.0, "IVP": 0.0, "EVP": 0.0, "COUNT": 0},
@@ -14,8 +19,7 @@ probability_matrix = {
     "IVP": {"BNP": 0.0, "INP": 0.0, "ENP": 0.0, "BVP": 0.0, "IVP": 0.0, "EVP": 0.0, "COUNT": 0},
     "EVP": {"BNP": 0.0, "INP": 0.0, "ENP": 0.0, "BVP": 0.0, "IVP": 0.0, "EVP": 0.0, "COUNT": 0}
 }
-
-
+"""
 def pre_process():
     global text
     
@@ -50,7 +54,7 @@ def pre_process():
     if 'àquela' in text:
         text.replace('àquela', 'a aquela')
     if 'àquilo' in text:
-        text.replace('àquilo', 'a aquilo'))
+        text.replace('àquilo', 'a aquilo')
 
 
 def get_sentences():
@@ -60,13 +64,6 @@ def get_sentences():
     if '' in conj_sentences:
         conj_sentences.remove('')
     
-
-def read_files(file_name):
-    global text
-    
-    with open(file_name) as file:
-        text = file.read()
-
 
 def get_morphology():
     global cogroo, pos_taggers, conj_sentences
@@ -85,6 +82,45 @@ def analyze_sentences():
     pre_process() # realiza a separação de palavras compostas
     get_sentences()
     get_morphology()
+"""
+'''
+ Código extraido do site do NLTK: http://www.nltk.org/howto/portuguese_en.html 
+ As tags consistem em algumas informações sintáticas, seguidas por um sinal de mais, seguido por uma tag
+ convencional de parte da fala. Vamos retirar o material antes do sinal de mais: 
+'''
+def simplify_tag(t):
+    if "+" in t:
+        return t[t.index("+")+1:]
+    else:
+        return t
+
+
+# Treinamento para uso do NLTK
+tsents = floresta.tagged_sents()
+tsents = [[(w.lower(), simplify_tag(t)) for (w, t) in sent] for sent in tsents if sent]
+tagger0 = nltk.DefaultTagger('nOp')
+tagger1 = nltk.UnigramTagger(tsents, backoff=tagger0)
+tagger2 = nltk.BigramTagger(tsents, backoff=tagger1)
+# Vamos usar o trigrama que supostamente é mais acurado
+tagger3 = nltk.TrigramTagger(tsents, backoff=tagger2)
+
+
+# Ler arquivos com os textos de entrada.
+def read_files(file_name):
+    global text
+
+    with open(file_name) as file:
+        text = file.read()
+
+# Gera tuplas com a palavra e a classe morfológica.
+def analyze_morphology():
+    global tagger3, text
+
+    name_f = input('Insira o nome do arquivo com a extensão (ex.: file.txt): ')
+    read_files(name_f)
+    tokens = tokenize.word_tokenize(text, language='portuguese')
+    morphology = tagger3.tag(tokens)
+    return morphology
 
 
 def count_sintag(sentence):
@@ -116,7 +152,6 @@ def test_sentences(sentences):
     senteces_new_sintag = []
     for sentence in sentences:
         splitted_words = sentence.split()
-
         sentence_without_sintag = ""
         for splitted_word in splitted_words:
             sentence_without_sintag += splitted_word.split('/')[0]+" "
