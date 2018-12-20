@@ -146,7 +146,7 @@ def get_probability(sentence):
 
 
 def define_first_sintag(word):
-    if "v" == word[1] or "v-" in word[1]:
+    if word[1] in ('v-fin', 'v-inf', 'v-ger', 'v-pcp', 'vaux', 'v', 'vp', 'pcp'):
         return "/BVP"
     return "/BNP"
 
@@ -198,7 +198,7 @@ def get_next_sentence_sintag(sentence):
         del (probability_matrix_copy["COUNT"])
         word_sintag = sorted(probability_matrix_copy.items(), key=operator.itemgetter(1), reverse=True)
 
-        if word[1] == "v" or "v-" in word[1]:
+        if word[1] in ('v-fin', 'v-inf', 'v-ger', 'v-pcp', 'vaux', 'v', 'vp', 'pcp'):
             for wd_sintag in word_sintag:
                 if "V" in wd_sintag[0]:
                     if wd_sintag[1] == 0.0:
@@ -230,9 +230,11 @@ def to_lower_case(s):
     lines = s.split(".")
     new_lines = []
     for line in lines[:-1]:
+        if line[0] == " ":
+            line = line[1:]
         l = line[0].lower() + line[1:]
         new_lines.append(l)
-    joined = '.'.join(new_lines)
+    joined = '. '.join(new_lines)
     return joined
 
 
@@ -240,9 +242,11 @@ def to_upper_case(s):
     lines = s.split(".")
     new_lines = []
     for line in lines[:-1]:
+        if line[0] == " ":
+            line = line[1:]
         l = line[0].upper() + line[1:]
         new_lines.append(l)
-    joined = '.'.join(new_lines)
+    joined = '. '.join(new_lines)
     return joined
 
 
@@ -292,6 +296,8 @@ test_sentences(test_set)
 sentence = input("Entre com a sentença para classificação dos sintagmas nominais e verbais: ")
 print(to_upper_case(' '.join(get_next_sentence_sintag(sentence)))+".")
 
+#Quando o segundo sol chegar. É preciso ser muito forte. Tentar ser forte é necessário. Qualquer coisa é melhor que nada.
+#Quando o segundo sol chegar. É preciso ser muito forte. Tentaremos resistir. Qualquer coisa é melhor que nada.
 # while True:
 #     condition = False
 #     # Chama a função que pega as morphologias
