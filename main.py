@@ -159,7 +159,7 @@ def test_sentences(sentences):
         for splitted_word in splitted_words:
             sentence_without_sintag += splitted_word.split('/')[0]
             if splitted_word.split('/')[1][-1:] in {",", ".", ";"}:
-                sentence_without_sintag +=splitted_word.split('/')[1][-1:]
+                sentence_without_sintag += splitted_word.split('/')[1][-1:]
             sentence_without_sintag += " "
         senteces_no_sintag.append(sentence_without_sintag)
         senteces_new_sintag.append(' '.join(get_next_sentence_sintag(sentence_without_sintag)))
@@ -195,7 +195,7 @@ def get_next_sentence_sintag(sentence):
         probability_matrix_copy = probability_matrix[sintag_splitted].copy()
         del (probability_matrix_copy["COUNT"])
         word_sintag = sorted(probability_matrix_copy.items(), key=operator.itemgetter(1), reverse=True)
-        
+
         if word[1] == "v" or "v-" in word[1]:
             for wd_sintag in word_sintag:
                 if "V" in wd_sintag[0]:
