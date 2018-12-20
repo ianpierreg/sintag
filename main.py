@@ -127,6 +127,14 @@ def analyze_morphology():
     return morphology
 
 
+def probability_greatest(key):
+    greast = 0
+    for value in probability_matrix[key].values():
+        if greast < value:
+            greast = value
+    return [item_key for item_key, value in probability_matrix[key].items() if value == greast]
+
+
 def count_sintag(sentence):
     words_sentence = sentence.split()
     for word in words_sentence:
