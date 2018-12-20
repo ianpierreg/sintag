@@ -1,11 +1,19 @@
 # -*- coding: utf-8 -*-
 import nltk
-from cogroo_interface import Cogroo
-cogroo = Cogroo.Instance()
+
+nltk.download('averaged_perceptron_tagger')
+nltk.download('floresta')
+nltk.download('punkt')
+from nltk import tokenize
+from nltk.corpus import floresta
+# from cogroo_interface import Cogroo
+# cogroo = Cogroo.Instance()
 import operator
+
 text = ""
-conj_sentences = []
-pos_taggers = []
+# conj_sentences = []
+# pos_taggers = []
+tuples = []
 probability_matrix = {
     "BNP": {"BNP": 0.0, "INP": 0.0, "ENP": 0.0, "BVP": 0.0, "IVP": 0.0, "EVP": 0.0, "COUNT": 0},
     "INP": {"BNP": 0.0, "INP": 0.0, "ENP": 0.0, "BVP": 0.0, "IVP": 0.0, "EVP": 0.0, "COUNT": 0},
@@ -14,11 +22,10 @@ probability_matrix = {
     "IVP": {"BNP": 0.0, "INP": 0.0, "ENP": 0.0, "BVP": 0.0, "IVP": 0.0, "EVP": 0.0, "COUNT": 0},
     "EVP": {"BNP": 0.0, "INP": 0.0, "ENP": 0.0, "BVP": 0.0, "IVP": 0.0, "EVP": 0.0, "COUNT": 0}
 }
-
-
+"""
 def pre_process():
     global text
-    
+
     if 'ao' in text:
         text.replace('ao', 'a o')
     if 'à' in text:
@@ -50,27 +57,20 @@ def pre_process():
     if 'àquela' in text:
         text.replace('àquela', 'a aquela')
     if 'àquilo' in text:
-        text.replace('àquilo', 'a aquilo'))
+        text.replace('àquilo', 'a aquilo')
 
 
 def get_sentences():
     global conj_sentences, text
-    
+
     conj_sentences = text.split(".")
     if '' in conj_sentences:
         conj_sentences.remove('')
-    
-
-def read_files(file_name):
-    global text
-    
-    with open(file_name) as file:
-        text = file.read()
 
 
 def get_morphology():
     global cogroo, pos_taggers, conj_sentences
-    
+
     pos_taggers = []
     for term in conj_sentences:
         tagger = []        
@@ -85,6 +85,45 @@ def analyze_sentences():
     pre_process() # realiza a separação de palavras compostas
     get_sentences()
     get_morphology()
+"""
+'''
+ Código extraido do site do NLTK: http://www.nltk.org/howto/portuguese_en.html 
+ As tags consistem em algumas informações sintáticas, seguidas por um sinal de mais, seguido por uma tag
+ convencional de parte da fala. Vamos retirar o material antes do sinal de mais: 
+'''
+
+
+def simplify_tag(t):
+    if "+" in t:
+        return t[t.index("+") + 1:]
+    else:
+        return t
+
+
+# Treinamento para uso do NLTK
+tsents = floresta.tagged_sents()
+tsents = [[(w.lower(), simplify_tag(t)) for (w, t) in sent] for sent in tsents if sent]
+tagger0 = nltk.DefaultTagger('nOp')
+tagger1 = nltk.UnigramTagger(tsents, backoff=tagger0)
+tagger2 = nltk.BigramTagger(tsents, backoff=tagger1)
+# Vamos usar o trigrama que supostamente é mais acurado
+tagger3 = nltk.TrigramTagger(tsents, backoff=tagger2)
+
+
+# Ler arquivos com os textos de entrada.
+def read_files(file_name):
+    global text
+
+    with open(file_name) as file:
+        text = file.read()
+
+
+# Gera tuplas com a palavra e a classe morfológica.
+def analyze_morphology(sentence):
+    global tagger3
+    tokens = tokenize.word_tokenize(sentence, language='portuguese')
+    morphology = tagger3.tag(tokens)
+    return morphology
 
 
 def count_sintag(sentence):
@@ -106,7 +145,7 @@ def get_probability(sentence):
 
 
 def define_first_sintag(word):
-    if "VB" in nltk.pos_tag([word])[0][1]:
+    if "v" == word[1] or "v-" in word[1]:
         return "/BVP"
     return "/BNP"
 
@@ -116,30 +155,66 @@ def test_sentences(sentences):
     senteces_new_sintag = []
     for sentence in sentences:
         splitted_words = sentence.split()
-
         sentence_without_sintag = ""
         for splitted_word in splitted_words:
-            sentence_without_sintag += splitted_word.split('/')[0]+" "
+            sentence_without_sintag += splitted_word.split('/')[0]
+            if splitted_word.split('/')[1][-1:] in {",", ".", ";"}:
+                sentence_without_sintag +=splitted_word.split('/')[1][-1:]
+            sentence_without_sintag += " "
         senteces_no_sintag.append(sentence_without_sintag)
         senteces_new_sintag.append(' '.join(get_next_sentence_sintag(sentence_without_sintag)))
-        
+
     test_x_train(sentences, senteces_new_sintag)
 
 
 def get_next_sentence_sintag(sentence):
-    words_sentence = sentence.split()
-    last_word = words_sentence[0] + define_first_sintag(words_sentence[0])
+    sentence_tagged = analyze_morphology(sentence)
+    last_word = sentence_tagged[0][0] + define_first_sintag(sentence_tagged[0])
     words = [last_word]
+    init_again = False
 
-    for word in words_sentence[1:]:
+    for word in sentence_tagged[1:]:
+        if word[0] in (",", ";", "."):
+            if len(words) > 1 and words[-1][-3:-2] == "I":
+                change_sintag = words.pop()
+                change_sintag = list(change_sintag)
+                change_sintag[-3] = "E"
+                change_sintag = "".join(change_sintag)
+                words.append(change_sintag)
+            words[-1] += ","
+            init_again = True
+            continue
+        if init_again:
+            last_word = word[0] + define_first_sintag(word)
+            words.append(last_word)
+            init_again = False
+            continue
+
         splitted_word = last_word.split('/')
         sintag_splitted = splitted_word[1][:3]
         probability_matrix_copy = probability_matrix[sintag_splitted].copy()
-        del(probability_matrix_copy["COUNT"])
+        del (probability_matrix_copy["COUNT"])
         word_sintag = sorted(probability_matrix_copy.items(), key=operator.itemgetter(1), reverse=True)
-        word = word+"/"+word_sintag[0][0]
-        words.append(word)
-        last_word = word
+        
+        if word[1] == "v" or "v-" in word[1]:
+            for wd_sintag in word_sintag:
+                if "V" in wd_sintag[0]:
+                    if wd_sintag[1] == 0.0:
+                        last_word = word[0] + "/" + "BVP"
+                    else:
+                        last_word = word[0] + "/" + wd_sintag[0]
+                    break
+        else:
+            last_word = word[0] + "/" + word_sintag[0][0]
+
+        if last_word[-3:-2] == "B":
+            change_sintag = words.pop()
+            change_sintag = list(change_sintag)
+            change_sintag[-3] = "E"
+            change_sintag = "".join(change_sintag)
+            words.append(change_sintag)
+
+        words.append(last_word)
     return words
 
 
@@ -166,7 +241,6 @@ def test_x_train(sentences_old_sintag, sentences_new_sintag):
     print("Match de tokens/Total de tokens %s/%s" % (match_sintag, general_count))
     print("Simlaridade por tokens: %.2f%%\n\n" % token_similarity)
 
-
     print("Match de frases/Total de frases %s/%s" % (match_phrase, len(sentences_old_sintag)))
     print("Similaridade por frase:%.2f%%" % sentence_similarity)
 
@@ -187,5 +261,33 @@ with open('test.txt') as f:
     test_set = f.readlines()
 test_sentences(test_set)
 
-
-
+# while True:
+#     condition = False
+#     # Chama a função que pega as morphologias
+#     postags = analyze_morphology()
+#     ant_word = ''
+#     ant_tag = ''
+#     atual_word = ''
+#     atual_tag = ''
+#     prox_word = ''
+#     prox_tag = ''
+#     i = 0  # incementa a cada interação para saber o valor do anterior caso precise mudar a tang para /ENP ou /EVP
+#     if 'nOp' in postags[0][1]:
+#         postags[0][1] = '/BNP'
+#         atual_tag = postags[0][1]
+#     elif 'v' in postags[0][1]:
+#         postags[0][1] = '/BVP'
+#         atual_tag = postags[0][1]
+#     for tag1 in postags:
+#         if '/BNP' not in tag1[0][1]:
+#             if not ant_tag:
+#                 ant_tag = atual_tag
+#                 if ant_tag is '/BNP':
+#                     pass
+#                 # coleta maiores probabilidades de proximas tags, com anterior sendo BNP
+#                 # chega a possibilidades com as tags atuais, se existir um 'v' na string e a string não for "adv", então classifica como /INP
+#                 # Se caso a string for v classifica a anterior se não for BNP com ENP se for BNP não faz nada. Isto vale para os verbos também.
+#
+#     # Loop para leituras de vários arquivos
+#     if condition:
+#         break
