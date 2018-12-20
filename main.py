@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+
 import nltk
 
 nltk.download('averaged_perceptron_tagger')
@@ -162,13 +163,14 @@ def test_sentences(sentences):
                 sentence_without_sintag += splitted_word.split('/')[1][-1:]
             sentence_without_sintag += " "
         senteces_no_sintag.append(sentence_without_sintag)
-        senteces_new_sintag.append(' '.join(get_next_sentence_sintag(sentence_without_sintag)))
+        senteces_new_sintag.append(to_upper_case(' '.join(get_next_sentence_sintag(sentence_without_sintag))))
 
     test_x_train(sentences, senteces_new_sintag)
 
 
 def get_next_sentence_sintag(sentence):
-    sentence_tagged = analyze_morphology(sentence)
+    lower_sentence = to_lower_case(sentence)+"."
+    sentence_tagged = analyze_morphology(lower_sentence)
     last_word = sentence_tagged[0][0] + define_first_sintag(sentence_tagged[0])
     words = [last_word]
     init_again = False
@@ -181,7 +183,7 @@ def get_next_sentence_sintag(sentence):
                 change_sintag[-3] = "E"
                 change_sintag = "".join(change_sintag)
                 words.append(change_sintag)
-            words[-1] += ","
+            words[-1] += word[0]
             init_again = True
             continue
         if init_again:
@@ -207,7 +209,7 @@ def get_next_sentence_sintag(sentence):
         else:
             last_word = word[0] + "/" + word_sintag[0][0]
 
-        if last_word[-3:-2] == "B":
+        if last_word[-3:-2] == "B" and words[-1][-3:-2] == "I":
             change_sintag = words.pop()
             change_sintag = list(change_sintag)
             change_sintag[-3] = "E"
@@ -215,7 +217,33 @@ def get_next_sentence_sintag(sentence):
             words.append(change_sintag)
 
         words.append(last_word)
+    if(words[-1][-3:-2] == "I"):
+        change_sintag = words.pop()
+        change_sintag = list(change_sintag)
+        change_sintag[-3] = "E"
+        change_sintag = "".join(change_sintag)
+        words.append(change_sintag)
     return words
+
+
+def to_lower_case(s):
+    lines = s.split(".")
+    new_lines = []
+    for line in lines[:-1]:
+        l = line[0].lower() + line[1:]
+        new_lines.append(l)
+    joined = '.'.join(new_lines)
+    return joined
+
+
+def to_upper_case(s):
+    lines = s.split(".")
+    new_lines = []
+    for line in lines[:-1]:
+        l = line[0].upper() + line[1:]
+        new_lines.append(l)
+    joined = '.'.join(new_lines)
+    return joined
 
 
 def test_x_train(sentences_old_sintag, sentences_new_sintag):
@@ -238,11 +266,11 @@ def test_x_train(sentences_old_sintag, sentences_new_sintag):
             match_phrase += 1
     token_similarity = (match_sintag / general_count) * 100
     sentence_similarity = (match_phrase / len(sentences_old_sintag)) * 100
-    print("Match de tokens/Total de tokens %s/%s" % (match_sintag, general_count))
-    print("Simlaridade por tokens: %.2f%%\n\n" % token_similarity)
+    print("Match de tokens/Total de tokens na base de teste %s/%s" % (match_sintag, general_count))
+    print("Simlaridade por tokens na base de teste: %.2f%%\n\n" % token_similarity)
 
-    print("Match de frases/Total de frases %s/%s" % (match_phrase, len(sentences_old_sintag)))
-    print("Similaridade por frase:%.2f%%" % sentence_similarity)
+    print("Match de frases/Total de frases na base de teste %s/%s" % (match_phrase, len(sentences_old_sintag)))
+    print("Similaridade por frase na base de teste:%.2f%%\n\n" % sentence_similarity)
 
 
 # sentence = 'Daniela/BNP Claro/ENP é/BVP professora/BNP de/INP a/INP UFBA/ENP'
@@ -260,6 +288,9 @@ for sentence in train_set:
 with open('test.txt') as f:
     test_set = f.readlines()
 test_sentences(test_set)
+
+sentence = input("Entre com a sentença para classificação dos sintagmas nominais e verbais: ")
+print(to_upper_case(' '.join(get_next_sentence_sintag(sentence)))+".")
 
 # while True:
 #     condition = False
