@@ -104,7 +104,7 @@ tsents = [[(w.lower(), simplify_tag(t)) for (w, t) in sent] for sent in tsents i
 tagger0 = nltk.DefaultTagger('nOp')
 tagger1 = nltk.UnigramTagger(tsents, backoff=tagger0)
 tagger2 = nltk.BigramTagger(tsents, backoff=tagger1)
-# Vamos usar o trigrama que supostamente é mais acurado
+# uso do trigrama para obter maior acurácia. 
 tagger3 = nltk.TrigramTagger(tsents, backoff=tagger2)
 
 
@@ -126,7 +126,7 @@ def analyze_morphology():
     morphology = tagger3.tag(tokens)
     return morphology
 
-
+# Coletas as tags das maiores probabilidades
 def probability_greatest(key):
     greast = 0
     for value in probability_matrix[key].values():
@@ -245,19 +245,18 @@ while True:
     atual_tag = ''
     prox_word = ''
     prox_tag = ''
-    i = 0  # incementa a cada interação para saber o valor do anterior caso precise mudar a tang para /ENP ou /EVP
-    if 'nOp' in postags[0][1]:
+    if 'v' not in postags[0][1]:
         postags[0][1] = '/BNP'
         atual_tag = postags[0][1]
-    elif 'v' in postags[0][1]:
+    else:
         postags[0][1] = '/BVP'
         atual_tag = postags[0][1]
-    for tag1 in postags:
-        if '/BNP' not in tag1[0][1]:
+
+    for idx, tag1 in enumerate(postags):
+        if idx and '/BNP' in postags[idx - 1][1]:
             if not ant_tag:
                 ant_tag = atual_tag
-                if ant_tag is '/BNP':
-                    pass
+                list_prob = probability_greatest('BNP')
                 # coleta maiores probabilidades de proximas tags, com anterior sendo BNP
                 # chega a possibilidades com as tags atuais, se existir um 'v' na string e a string não for "adv", então classifica como /INP
                 # Se caso a string for v classifica a anterior se não for BNP com ENP se for BNP não faz nada. Isto vale para os verbos também.
