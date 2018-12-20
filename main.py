@@ -11,6 +11,7 @@ import operator
 text = ""
 # conj_sentences = []
 # pos_taggers = []
+tuples = []
 probability_matrix = {
     "BNP": {"BNP": 0.0, "INP": 0.0, "ENP": 0.0, "BVP": 0.0, "IVP": 0.0, "EVP": 0.0, "COUNT": 0},
     "INP": {"BNP": 0.0, "INP": 0.0, "ENP": 0.0, "BVP": 0.0, "IVP": 0.0, "EVP": 0.0, "COUNT": 0},
@@ -88,6 +89,8 @@ def analyze_sentences():
  As tags consistem em algumas informações sintáticas, seguidas por um sinal de mais, seguido por uma tag
  convencional de parte da fala. Vamos retirar o material antes do sinal de mais: 
 '''
+
+
 def simplify_tag(t):
     if "+" in t:
         return t[t.index("+")+1:]
@@ -111,6 +114,7 @@ def read_files(file_name):
 
     with open(file_name) as file:
         text = file.read()
+
 
 # Gera tuplas com a palavra e a classe morfológica.
 def analyze_morphology():
@@ -223,4 +227,33 @@ with open('test.txt') as f:
 test_sentences(test_set)
 
 
+while True:
+    condition = False
+    # Chama a função que pega as morphologias
+    postags = analyze_morphology()
+    ant_word = ''
+    ant_tag = ''
+    atual_word = ''
+    atual_tag = ''
+    prox_word = ''
+    prox_tag = ''
+    i = 0  # incementa a cada interação para saber o valor do anterior caso precise mudar a tang para /ENP ou /EVP
+    if 'nOp' in postags[0][1]:
+        postags[0][1] = '/BNP'
+        atual_tag = postags[0][1]
+    elif 'v' in postags[0][1]:
+        postags[0][1] = '/BVP'
+        atual_tag = postags[0][1]
+    for tag1 in postags:
+        if '/BNP' not in tag1[0][1]:
+            if not ant_tag:
+                ant_tag = atual_tag
+                if ant_tag is '/BNP':
+                    pass
+                # coleta maiores probabilidades de proximas tags, com anterior sendo BNP
+                # chega a possibilidades com as tags atuais, se existir um 'v' na string e a string não for "adv", então classifica como /INP
+                # Se caso a string for v classifica a anterior se não for BNP com ENP se for BNP não faz nada. Isto vale para os verbos também.
 
+    # Loop para leituras de vários arquivos
+    if condition:
+        break
